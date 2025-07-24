@@ -1,0 +1,169 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+body {
+  background: #F5F7FA;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  color: #22223B;
+}
+
+.cheerful-bg {
+  min-height: 100vh;
+  background: #F5F7FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.onboard-container {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 32px rgba(43, 80, 236, 0.08), 0 1.5px 6px rgba(43, 80, 236, 0.04);
+  padding: 2.5rem 2rem 2rem 2rem;
+  max-width: 370px;
+  width: 100%;
+  text-align: center;
+  border: 1px solid #E5EAF2;
+}
+
+.onboard-container h1 {
+  color: #2B50EC;
+  margin-bottom: 1.5rem;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.onboard-container h2 {
+  color: #1A1A2E;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.onboard-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.onboard-form input {
+  padding: 0.8rem 1rem;
+  border: 1.5px solid #E5EAF2;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #F5F7FA;
+  transition: border 0.2s, box-shadow 0.2s;
+  color: #22223B;
+}
+
+.onboard-form input:focus {
+  border: 1.5px solid #2B50EC;
+  outline: none;
+  box-shadow: 0 0 0 2px #4F8CFF33;
+}
+
+.onboard-form button {
+  background: linear-gradient(90deg, #2B50EC 0%, #4F8CFF 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.9rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(43, 80, 236, 0.08);
+  letter-spacing: 0.5px;
+}
+
+.onboard-form button:hover {
+  background: linear-gradient(90deg, #4F8CFF 0%, #2B50EC 100%);
+  box-shadow: 0 4px 16px rgba(43, 80, 236, 0.12);
+}
+
+.error-msg {
+  color: #fff;
+  background: #FF4E50;
+  border-radius: 6px;
+  padding: 0.6rem;
+  margin-top: 0.5rem;
+  font-size: 0.98rem;
+  font-weight: 500;
+  box-shadow: 0 1px 4px rgba(255, 78, 80, 0.08);
+}
+
+.onboard-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.signup-link {
+  display: inline-block;
+  background: #F5F7FA;
+  color: #2B50EC;
+  padding: 0.7rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  margin: 1rem 0;
+  transition: background 0.2s, color 0.2s;
+  border: 1.5px solid #2B50EC;
+  word-break: break-all;
+}
+.signup-link:hover {
+  background: #2B50EC;
+  color: #fff;
+}
+
+.cheerful-msg {
+  color: #4F8CFF;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+::-webkit-input-placeholder { color: #6B7280; }
+::-moz-placeholder { color: #6B7280; }
+:-ms-input-placeholder { color: #6B7280; }
+::placeholder { color: #6B7280; }
