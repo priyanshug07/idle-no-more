@@ -146,3 +146,12 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=2),
 }
+
+# Email backend configuration (SMTP example)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # Change to your SMTP server
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your_email@gmail.com'  # Change to your email
+EMAIL_HOST_PASSWORD = 'your_email_password'  # Change to your email password or app password
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
