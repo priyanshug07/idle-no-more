@@ -88,6 +88,17 @@ function ActivatePage() {
   );
 }
 
+// Helper to fetch with auth
+async function fetchWithAuth(url, token, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
 function FancyBackground() {
   // Animated SVG blobs for a fancy effect
   return (
@@ -139,6 +150,14 @@ function MainApp() {
   });
   const [signupUrl, setSignupUrl] = useState('');
   const [user, setUser] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [assigning, setAssigning] = useState(false);
+  const [assigned, setAssigned] = useState(false);
+  const [tasks, setTasks] = useState([]);
+  const [selectedTasks, setSelectedTasks] = useState([]);
+  const [assigningTasks, setAssigningTasks] = useState(false);
+  const [tasksAssigned, setTasksAssigned] = useState(false);
 
   // Handle login form input
   const handleLoginChange = (e) => {
@@ -187,9 +206,96 @@ function MainApp() {
       const data = await res.json();
       setUser(data.user);
       setSignupUrl(data.signup_url);
-      setStep('done');
+      setStep('assign_project');
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  // Fetch projects when step is assign_project
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (step === 'assign_project' && token && user) {
+        try {
+          // For demo, using project=1 as in your example
+          const res = await fetchWithAuth(`${API_BASE}/tasks/?project=1`, token);
+          if (!res.ok) throw new Error('Failed to fetch projects');
+          const data = await res.json();
+          setProjects(data);
+        } catch (err) {
+          setError('Could not load projects');
+        }
+      }
+    };
+    fetchProjects();
+  }, [step, token, user]);
+
+  // Assign project to user
+  const handleAssignProject = async (e) => {
+    e.preventDefault();
+    if (!selectedProject) return;
+    setAssigning(true);
+    setError('');
+    try {
+      const res = await fetchWithAuth(
+        `${API_BASE}/projects/${selectedProject}/assign_employees/`,
+        token,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ employee_ids: [user.id] }),
+        }
+      );
+      if (!res.ok) throw new Error('Failed to assign project');
+      setAssigned(true);
+      // Fetch tasks for the selected project
+      const tasksRes = await fetchWithAuth(`${API_BASE}/tasks/?project=${selectedProject}`, token);
+      if (!tasksRes.ok) throw new Error('Failed to fetch tasks for project');
+      const tasksData = await tasksRes.json();
+      setTasks(tasksData);
+      setStep('assign_tasks');
+    } catch (err) {
+      setError('Could not assign project.');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  // Handle task checkbox change
+  const handleTaskCheckbox = (taskId) => {
+    setSelectedTasks((prev) =>
+      prev.includes(taskId)
+        ? prev.filter((id) => id !== taskId)
+        : [...prev, taskId]
+    );
+  };
+
+  // Assign selected tasks to user
+  const handleAssignTasks = async (e) => {
+    e.preventDefault();
+    if (!selectedTasks.length) return;
+    setAssigningTasks(true);
+    setError('');
+    try {
+      // Assign user to each selected task
+      for (const taskId of selectedTasks) {
+        const res = await fetchWithAuth(
+          `${API_BASE}/tasks/${taskId}/assign_employees/`,
+          token,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ employee_ids: [user.id] }),
+          }
+        );
+        if (!res.ok) throw new Error('Failed to assign one or more tasks');
+      }
+      setTasksAssigned(true);
+      setStep('done');
+    } catch (err) {
+      setError('Could not assign tasks. Make sure the user is assigned to the project first.');
+    } finally {
+      setAssigningTasks(false);
     }
   };
 
@@ -267,7 +373,50 @@ function MainApp() {
               onChange={handleOnboardChange}
               required
             />
-            <button type="submit">Onboard User!</button>
+            <button type="submit">Onboard Me!</button>
+            {error && <div className="error-msg">{error}</div>}
+          </form>
+        )}
+        {step === 'assign_project' && user && (
+          <form className="onboard-form" onSubmit={handleAssignProject}>
+            <h2>Assign Project to {user.username}</h2>
+            <select
+              value={selectedProject || ''}
+              onChange={e => setSelectedProject(Number(e.target.value))}
+              required
+              style={{padding: '0.7rem 1rem', borderRadius: 8, border: '1.5px solid #E5EAF2', fontSize: '1rem', background: '#F5F7FA', color: '#22223B'}}
+            >
+              <option value="" disabled>Select a project</option>
+              {projects.map((proj) => (
+                <option key={proj.project} value={proj.project}>{proj.name}</option>
+              ))}
+            </select>
+            <button type="submit" disabled={assigning}>{assigning ? 'Assigning...' : 'Assign Project'}</button>
+            {error && <div className="error-msg">{error}</div>}
+          </form>
+        )}
+        {step === 'assign_tasks' && user && (
+          <form className="onboard-form" onSubmit={handleAssignTasks}>
+            <h2>Assign Tasks to {user.username}</h2>
+            <div style={{textAlign: 'left', margin: '0 auto', maxHeight: 180, overflowY: 'auto', background: '#F5F7FA', borderRadius: 8, padding: '0.5rem 0.5rem 0.5rem 1rem', border: '1.5px solid #E5EAF2'}}>
+              {tasks.length === 0 && <div style={{color: '#6B7280'}}>No tasks available for this project.</div>}
+              {tasks.map((task) => (
+                <div key={task.id} style={{marginBottom: 6}}>
+                  <label style={{cursor: 'pointer'}}>
+                    <input
+                      type="checkbox"
+                      checked={selectedTasks.includes(task.id)}
+                      onChange={() => handleTaskCheckbox(task.id)}
+                      style={{marginRight: 8}}
+                    />
+                    {task.name}
+                  </label>
+                </div>
+              ))}
+            </div>
+            <button type="submit" disabled={assigningTasks || !selectedTasks.length}>
+              {assigningTasks ? 'Assigning...' : 'Assign Selected Tasks'}
+            </button>
             {error && <div className="error-msg">{error}</div>}
           </form>
         )}
