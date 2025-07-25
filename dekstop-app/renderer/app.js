@@ -499,6 +499,7 @@ function renderDashboard(data, assignedProjects, token) {
           <div class="user-name">${employee.first_name || employee.username}</div>
           <div class="user-role">${employee.role}</div>
         </div>
+        <button class="btn btn-secondary sidebar-btn" id="view-history-btn">View Past Time Trackings</button>
         <button class="btn btn-logout" id="logout-btn">Log Out</button>
       </aside>
       <main class="dashboard-main">
@@ -565,6 +566,11 @@ function renderDashboard(data, assignedProjects, token) {
     renderLogin();
   };
 
+  // Add view history button handler
+  document.getElementById('view-history-btn').onclick = () => {
+    showHistoryModal(token, assignedProjects, tasks);
+  };
+
   // Time logging panel logic
   const projectSelect = document.getElementById('timelog-project');
   const taskSelect = document.getElementById('timelog-task');
@@ -604,6 +610,182 @@ function renderDashboard(data, assignedProjects, token) {
     
     showTimeTrackingModal(token, selectedTask, selectedProject, selectedTaskName);
   };
+}
+
+function showHistoryModal(token, assignedProjects, tasks) {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content history-modal">
+      <div class="modal-header">
+        <h3>Time Tracking History</h3>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="history-filters">
+          <div class="filter-row">
+            <div class="form-group">
+              <label for="from-date">From Date</label>
+              <input type="datetime-local" id="from-date" class="filter-input">
+            </div>
+            <div class="form-group">
+              <label for="to-date">To Date</label>
+              <input type="datetime-local" id="to-date" class="filter-input">
+            </div>
+          </div>
+          <div class="filter-row">
+            <div class="form-group">
+              <label for="filter-project">Project</label>
+              <select id="filter-project" class="filter-select">
+                <option value="">All Projects</option>
+                ${assignedProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="filter-task">Task</label>
+              <select id="filter-task" class="filter-select">
+                <option value="">All Tasks</option>
+                ${tasks.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="filter-actions">
+            <button class="btn" id="apply-filters-btn">Apply Filters</button>
+            <button class="btn btn-secondary" id="clear-filters-btn">Clear Filters</button>
+          </div>
+        </div>
+        <div class="history-table-container">
+          <div class="loading-spinner" id="history-loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Loading history...</p>
+          </div>
+          <div class="history-table" id="history-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Task ID</th>
+                  <th>Start Time</th>
+                  <th>End Time</th>
+                  <th>Description</th>
+                  <th>Device Details</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody">
+                <tr>
+                  <td colspan="6" class="no-data">Click "Apply Filters" to load history</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modal-close-btn">Close</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Close modal handlers
+  document.getElementById('modal-close').onclick = () => document.body.removeChild(modal);
+  document.getElementById('modal-close-btn').onclick = () => document.body.removeChild(modal);
+  
+  // Filter handlers
+  document.getElementById('apply-filters-btn').onclick = () => {
+    loadHistoryData(token);
+  };
+  
+  document.getElementById('clear-filters-btn').onclick = () => {
+    document.getElementById('from-date').value = '';
+    document.getElementById('to-date').value = '';
+    document.getElementById('filter-project').value = '';
+    document.getElementById('filter-task').value = '';
+    loadHistoryData(token);
+  };
+  
+  // Load initial data
+  loadHistoryData(token);
+  
+  async function loadHistoryData(token) {
+    const loadingEl = document.getElementById('history-loading');
+    const tbodyEl = document.getElementById('history-tbody');
+    
+    loadingEl.style.display = 'flex';
+    tbodyEl.innerHTML = '';
+    
+    try {
+      // Build query parameters
+      const params = new URLSearchParams();
+      
+      const fromDate = document.getElementById('from-date').value;
+      const toDate = document.getElementById('to-date').value;
+      const projectId = document.getElementById('filter-project').value;
+      const taskId = document.getElementById('filter-task').value;
+      
+      if (fromDate) {
+        // Convert datetime-local to expected format: "YYYY-MM-DD HH:mm:ss"
+        const fromDateTime = new Date(fromDate);
+        const fromFormatted = fromDateTime.toISOString().slice(0, 19).replace('T', ' ');
+        params.append('from_time', fromFormatted);
+      }
+      
+      if (toDate) {
+        const toDateTime = new Date(toDate);
+        const toFormatted = toDateTime.toISOString().slice(0, 19).replace('T', ' ');
+        params.append('to_time', toFormatted);
+      }
+      
+      if (taskId) {
+        params.append('task_id', taskId);
+      }
+      
+      if (projectId) {
+        params.append('project_id', projectId);
+      }
+      
+      const url = `${API_BASE}/time-tracking/list/?${params.toString()}`;
+      console.log('Fetching history from:', url);
+      
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log('History data:', data);
+      
+      if (data.length === 0) {
+        tbodyEl.innerHTML = '<tr><td colspan="6" class="no-data">No time tracking records found</td></tr>';
+      } else {
+        tbodyEl.innerHTML = data.map(entry => `
+          <tr>
+            <td>${entry.id}</td>
+            <td>${entry.task_id}</td>
+            <td>${entry.start_time_user_time_zone ? new Date(entry.start_time_user_time_zone).toLocaleString() : 'N/A'}</td>
+            <td>${entry.end_time_user_time_zone ? new Date(entry.end_time_user_time_zone).toLocaleString() : 'N/A'}</td>
+            <td>${entry.description || 'No description'}</td>
+            <td>
+              <details>
+                <summary>View Details</summary>
+                <pre>${JSON.stringify(entry.device_details, null, 2)}</pre>
+              </details>
+            </td>
+          </tr>
+        `).join('');
+      }
+      
+    } catch (err) {
+      console.error('Error loading history:', err);
+      tbodyEl.innerHTML = `<tr><td colspan="6" class="error">Error loading history: ${err.message}</td></tr>`;
+    } finally {
+      loadingEl.style.display = 'none';
+    }
+  }
 }
 
 // On load, check for token and try to fetch dashboard

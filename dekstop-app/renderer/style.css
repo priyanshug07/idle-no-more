@@ -146,6 +146,22 @@ h1 {
   background: #b91c1c;
   color: #fff;
 }
+.sidebar-btn {
+  width: 100%;
+  background: #374151;
+  color: #fff;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 0.7rem 0;
+  box-shadow: 0 1px 2px rgba(25,35,45,0.04);
+  transition: background 0.2s;
+}
+.sidebar-btn:hover {
+  background: #4b5563;
+  color: #fff;
+}
 .dashboard-main {
   flex: 1;
   background: #f8fafc;
@@ -616,4 +632,159 @@ textarea:focus {
   background: #9ca3af;
   color: #6b7280;
   box-shadow: none;
+} 
+.history-modal {
+  width: 95%;
+  max-width: 1200px;
+  max-height: 90vh;
+}
+.history-filters {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #e5e7eb;
+}
+.filter-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.filter-row .form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+.filter-input, .filter-select {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background: #fff;
+  transition: border 0.2s;
+}
+.filter-input:focus, .filter-select:focus {
+  border: 1.5px solid #ffc43a;
+  outline: none;
+  box-shadow: 0 0 0 2px #ffe6a1;
+}
+.filter-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: flex-end;
+}
+.history-table-container {
+  position: relative;
+  min-height: 200px;
+}
+.loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  z-index: 10;
+}
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f4f6;
+  border-top: 3px solid #ffc43a;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.history-table {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+.history-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  font-size: 0.9rem;
+}
+.history-table th {
+  background: #f8fafc;
+  padding: 0.8rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #19232d;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+.history-table td {
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+}
+.history-table tr:hover {
+  background: #f9fafb;
+}
+.history-table tr:last-child td {
+  border-bottom: none;
+}
+.no-data, .error {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 2rem !important;
+}
+.error {
+  color: #dc2626;
+}
+.history-table details {
+  cursor: pointer;
+}
+.history-table summary {
+  color: #ffc43a;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+.history-table summary:hover {
+  color: #ffd56a;
+}
+.history-table pre {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #374151;
+  max-width: 300px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+@media (max-width: 768px) {
+  .history-modal {
+    width: 98%;
+    margin: 0.5rem;
+  }
+  .filter-row {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .filter-actions {
+    justify-content: center;
+  }
+  .history-table {
+    font-size: 0.8rem;
+  }
+  .history-table th,
+  .history-table td {
+    padding: 0.6rem 0.5rem;
+  }
+  .history-table pre {
+    max-width: 200px;
+    font-size: 0.7rem;
+  }
 } 
