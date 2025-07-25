@@ -488,6 +488,10 @@ h1 {
   color: #6b7280;
   font-size: 0.98rem;
 }
+.device-info span {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+}
 textarea {
   width: 100%;
   padding: 0.7rem 1rem;

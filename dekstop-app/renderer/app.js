@@ -347,35 +347,75 @@ async function fetchTasksForProject(token, projectId) {
 }
 
 function getSystemInfo() {
-  const userAgent = navigator.userAgent;
-  let os = 'Unknown';
-  let version = 'Unknown';
-  
-  if (userAgent.includes('Mac')) {
-    os = 'macOS';
-    // Extract macOS version if possible
-    const match = userAgent.match(/Mac OS X (\d+[._]\d+)/);
-    if (match) {
-      version = match[1].replace('_', '.');
+  try {
+    // Get real system information from Node.js
+    const systemInfo = window.systemInfo ? window.systemInfo.getSystemInfo() : null;
+    const macAddress = window.systemInfo ? window.systemInfo.getMacAddress() : null;
+    const ipAddress = window.systemInfo ? window.systemInfo.getIpAddress() : null;
+    
+    // Fallback to browser detection if Node.js info is not available
+    const userAgent = navigator.userAgent;
+    let os = 'Unknown';
+    let version = 'Unknown';
+    let browser = 'Unknown';
+
+    // Detect OS from user agent
+    if (userAgent.includes('Mac')) {
+      os = 'macOS';
+      const match = userAgent.match(/Mac OS X (\d+[._]\d+)/);
+      version = match ? match[1].replace('_', '.') : 'Unknown';
+    } else if (userAgent.includes('Windows')) {
+      os = 'Windows';
+      const match = userAgent.match(/Windows NT (\d+\.\d+)/);
+      version = match ? match[1] : 'Unknown';
+    } else if (userAgent.includes('Linux')) {
+      os = 'Linux';
+      version = 'Unknown';
     }
-  } else if (userAgent.includes('Windows')) {
-    os = 'Windows';
-    const match = userAgent.match(/Windows NT (\d+\.\d+)/);
-    if (match) {
-      version = match[1];
+
+    // Use Node.js info if available, otherwise use browser detection
+    if (systemInfo) {
+      os = systemInfo.platform || os;
+      version = systemInfo.release || version;
     }
-  } else if (userAgent.includes('Linux')) {
-    os = 'Linux';
+
+    // Detect browser from user agent
+    if (userAgent.includes('Chrome')) {
+      browser = 'Chrome';
+    } else if (userAgent.includes('Firefox')) {
+      browser = 'Firefox';
+    } else if (userAgent.includes('Safari')) {
+      browser = 'Safari';
+    } else if (userAgent.includes('Edge')) {
+      browser = 'Edge';
+    }
+
+    return {
+      os: os,
+      version: version,
+      browser: browser,
+      mac: macAddress || '00:1A:2B:3C:4D:5E', // Fallback if not available
+      ip: ipAddress || '192.168.1.100', // Fallback if not available
+      hostname: systemInfo ? systemInfo.hostname : 'Unknown',
+      arch: systemInfo ? systemInfo.arch : 'Unknown'
+    };
+  } catch (error) {
+    console.error('Error getting system info:', error);
+    // Return fallback values if everything fails
+    return {
+      os: 'Unknown',
+      version: 'Unknown',
+      browser: 'Unknown',
+      mac: '00:1A:2B:3C:4D:5E',
+      ip: '192.168.1.100',
+      hostname: 'Unknown',
+      arch: 'Unknown'
+    };
   }
-  
-  return {
-    os: os,
-    version: version,
-    browser: navigator.appName || 'Unknown'
-  };
 }
 
 function showTimeTrackingModal(token, selectedTaskId, selectedProjectName, selectedTaskName) {
+  console.log('showTimeTrackingModal called with:', { selectedTaskId, selectedProjectName, selectedTaskName });
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.innerHTML = `
@@ -415,6 +455,8 @@ function showTimeTrackingModal(token, selectedTaskId, selectedProjectName, selec
           <div class="device-info">
             <span>OS: ${getSystemInfo().os} ${getSystemInfo().version}</span>
             <span>Browser: ${getSystemInfo().browser}</span>
+            <span>MAC: ${getSystemInfo().mac}</span>
+            <span>IP: ${getSystemInfo().ip}</span>
           </div>
         </div>
       </div>
@@ -426,6 +468,7 @@ function showTimeTrackingModal(token, selectedTaskId, selectedProjectName, selec
   `;
   
   document.body.appendChild(modal);
+  console.log('Modal added to DOM');
   
   // Close modal handlers
   document.getElementById('modal-close').onclick = () => document.body.removeChild(modal);
@@ -451,8 +494,8 @@ function showTimeTrackingModal(token, selectedTaskId, selectedProjectName, selec
           task_id: selectedTaskId,
           timezone: timezone,
           description: description,
-          mac: "00:1A:2B:3C:4D:5E", // Placeholder - would need Node.js to get real MAC
-          ip: "192.168.1.100", // Placeholder - would need Node.js to get real IP
+          mac: deviceDetails.mac,
+          ip: deviceDetails.ip,
           device_details: deviceDetails
         })
       });
@@ -599,7 +642,10 @@ function renderDashboard(data, assignedProjects, token) {
     taskSelect.innerHTML = tasks.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
   }
   document.getElementById('start-timelog-btn').onclick = function () {
+    console.log('Start timelog button clicked');
     const selectedTask = taskSelect.value;
+    console.log('Selected task:', selectedTask);
+    
     if (!selectedTask) {
       alert('Please select a task first.');
       return;
@@ -608,6 +654,7 @@ function renderDashboard(data, assignedProjects, token) {
     const selectedProject = projectSelect.options[projectSelect.selectedIndex].text;
     const selectedTaskName = taskSelect.options[taskSelect.selectedIndex].text;
     
+    console.log('Opening modal with:', { selectedTask, selectedProject, selectedTaskName });
     showTimeTrackingModal(token, selectedTask, selectedProject, selectedTaskName);
   };
 }
