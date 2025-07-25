@@ -8,6 +8,8 @@ from django.utils import timezone as dj_timezone
 from .models import TimeTracking
 from task.models import Task
 import pytz
+from dateutil import parser
+from datetime import datetime
 
 # Create your views here.
 
@@ -67,7 +69,7 @@ class ActiveTimeTrackingView(APIView):
             'start_time': active_entry.start_time,
             'description': active_entry.description,
             'device_details': active_entry.device_details,
-            'time_offset': active_entry.time_offset,
+            'timezone': active_entry.timezone,
             'is_active': active_entry.is_active,
         }
         return Response(data, status=status.HTTP_200_OK)
@@ -98,21 +100,49 @@ class ListTimeTrackingsView(APIView):
         to_time = request.query_params.get('to_time')
         task_id = request.query_params.get('task_id')
         project_id = request.query_params.get('project_id')
-        tz = request.query_params.get('timezone') or user.timezone or 'UTC'
 
-        # Convert from_time and to_time from user's timezone to UTC
-        try:
-            user_tz = pytz.timezone(tz)
-        except Exception:
-            user_tz = pytz.UTC
+        # Expected format: "YYYY-MM-DD HH:mm:ss±HH:mm" or "YYYY-MM-DD HH:mm:ss"
+        datetime_format = "%Y-%m-%d %H:%M:%S"
+        
         if from_time:
-            from_time_local = dj_timezone.datetime.fromisoformat(from_time)
-            from_time_utc = user_tz.localize(from_time_local).astimezone(pytz.UTC)
-            qs = qs.filter(start_time__gte=from_time_utc)
+            try:
+                # Try parsing as timezone aware string first
+                try:
+                    from_time_parsed = parser.parse(from_time)
+                    if from_time_parsed.tzinfo:
+                        from_time_utc = from_time_parsed.astimezone(pytz.UTC)
+                    else:
+                        raise ValueError("No timezone info")
+                except:
+                    # If no timezone info, parse as naive datetime and convert to UTC
+                    from_time_parsed = datetime.strptime(from_time, datetime_format)
+                    from_time_utc = pytz.UTC.localize(from_time_parsed)
+                
+                qs = qs.filter(start_time__gte=from_time_utc)
+            except ValueError:
+                return Response({
+                    'detail': f'Invalid from_time format. Expected format: {datetime_format} or {datetime_format}±HH:mm'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
         if to_time:
-            to_time_local = dj_timezone.datetime.fromisoformat(to_time)
-            to_time_utc = user_tz.localize(to_time_local).astimezone(pytz.UTC)
-            qs = qs.filter(end_time__lte=to_time_utc) if to_time else qs
+            try:
+                # Try parsing as timezone aware string first
+                try:
+                    to_time_parsed = parser.parse(to_time)
+                    if to_time_parsed.tzinfo:
+                        to_time_utc = to_time_parsed.astimezone(pytz.UTC)
+                    else:
+                        raise ValueError("No timezone info")
+                except:
+                    # If no timezone info, parse as naive datetime and convert to UTC
+                    to_time_parsed = datetime.strptime(to_time, datetime_format)
+                    to_time_utc = pytz.UTC.localize(to_time_parsed)
+
+                qs = qs.filter(end_time__lte=to_time_utc)
+            except ValueError:
+                return Response({
+                    'detail': f'Invalid to_time format. Expected format: {datetime_format} or {datetime_format}±HH:mm'
+                }, status=status.HTTP_400_BAD_REQUEST)
         if task_id:
             qs = qs.filter(task_id=task_id)
         if project_id:
