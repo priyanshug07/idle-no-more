@@ -13,6 +13,8 @@ import urllib.parse
 import random
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+from project.serializers import ProjectSerializer
+from task.serializers import TaskSerializer
 
 
 
@@ -94,3 +96,55 @@ class ActivateAccountView(APIView):
         user.activated_at = timezone.now()
         user.save()
         return Response({'detail': 'Account activated successfully.'}, status=status.HTTP_200_OK)
+
+class DeactivateEmployeeView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAdminEmployee]
+
+    def post(self, request, *args, **kwargs):
+        employee_id = request.data.get('employee_id')
+        if not employee_id:
+            return Response({'detail': 'employee_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            employee = Employee.objects.get(id=employee_id, organisation=request.user.organisation)
+            employee.is_active = False
+            employee.deactivated_at = timezone.now()
+            employee.save()
+            return Response({'detail': 'Employee deactivated successfully.'}, status=status.HTTP_200_OK)
+        except Employee.DoesNotExist:
+            return Response({'detail': 'Employee not found or not in your organisation.'}, status=status.HTTP_404_NOT_FOUND)
+
+class CurrentEmployeeView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        projects = user.projects.all()
+        tasks = user.tasks.all()
+        return Response({
+            'employee': EmployeeSerializer(user).data,
+            'projects': ProjectSerializer(projects, many=True).data,
+            'tasks': TaskSerializer(tasks, many=True).data
+        })
+
+class UserProjectsView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        projects = user.projects.all()
+        return Response(ProjectSerializer(projects, many=True).data)
+
+class UserTasksView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        project_id = request.query_params.get('project_id')
+        tasks = user.tasks.all()
+        if project_id:
+            tasks = tasks.filter(project_id=project_id)
+        return Response(TaskSerializer(tasks, many=True).data)
