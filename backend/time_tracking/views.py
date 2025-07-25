@@ -172,3 +172,28 @@ class ListTimeTrackingsView(APIView):
                 'is_active': entry.is_active,
             })
         return Response(data, status=status.HTTP_200_OK)
+
+class HeartbeatTimeTrackingView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, time_tracking_id, *args, **kwargs):
+        """
+        Update the last_heart_beat field for an active time tracking entry.
+        This endpoint is called periodically by the client to indicate the user is still active.
+        """
+        user = request.user
+        try:
+            entry = TimeTracking.objects.get(id=time_tracking_id, employee=user, is_active=True)
+        except TimeTracking.DoesNotExist:
+            return Response({'detail': 'Active time tracking entry not found for this user.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Update the last_heart_beat field with current UTC time
+        entry.last_heart_beat = dj_timezone.now()
+        entry.save()
+        
+        return Response({
+            'detail': 'Heartbeat updated successfully.',
+            'id': entry.id,
+            'last_heart_beat': entry.last_heart_beat
+        }, status=status.HTTP_200_OK)

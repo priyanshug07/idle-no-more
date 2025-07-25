@@ -6,6 +6,7 @@ class TimeTracking(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='time_entries')
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='time_entries')
     start_time = models.DateTimeField()
+    last_heart_beat = models.DateTimeField(null=True, blank=True)
     end_time = models.DateTimeField(null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
