@@ -15,6 +15,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from project.serializers import ProjectSerializer
 from task.serializers import TaskSerializer
+from django.http import FileResponse
+import os
+from django.conf import settings
 
 
 
@@ -95,7 +98,11 @@ class ActivateAccountView(APIView):
         user.is_active = True
         user.activated_at = timezone.now()
         user.save()
-        return Response({'detail': 'Account activated successfully.'}, status=status.HTTP_200_OK)
+        return Response({
+            'detail': 'Account activated successfully.',
+            'download_url': '/api/employees/download-dmg/',
+            'download_filename': 'Idle No More-0.1.0-arm64.dmg'
+        }, status=status.HTTP_200_OK)
 
 class DeactivateEmployeeView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -148,3 +155,19 @@ class UserTasksView(APIView):
         if project_id:
             tasks = tasks.filter(project_id=project_id)
         return Response(TaskSerializer(tasks, many=True).data)
+
+class DMGDownloadView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        dmg_path = os.path.join(settings.MEDIA_ROOT, 'dmg_files', 'Idle No More-0.1.0-arm64.dmg')
+        if os.path.exists(dmg_path):
+            response = FileResponse(open(dmg_path, 'rb'))
+            response['Content-Type'] = 'application/octet-stream'
+            response['Content-Disposition'] = 'attachment; filename="Idle No More-0.1.0-arm64.dmg"'
+            return response
+        else:
+            return Response({'detail': 'DMG file not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+

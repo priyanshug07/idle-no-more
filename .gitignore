@@ -84,4 +84,14 @@ htmlcov/
 *.swo
 
 # Node (if any frontend)
-node_modules/ 
+node_modules/
+
+# Electron build artifacts
+dekstop-app/dist/
+dekstop-app/build/
+*.dmg
+*.app
+*.blockmap
+
+# Media files (DMG files are served from here)
+backend/media/dmg_files/ 

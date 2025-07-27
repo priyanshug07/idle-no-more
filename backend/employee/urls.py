@@ -1,7 +1,8 @@
 from django.urls import path
 from .views import (
     EmployeeCreateView, AdminCreateView, ActivateAccountView, ValidateCodeView,
-    DeactivateEmployeeView, CurrentEmployeeView, UserProjectsView, UserTasksView
+    DeactivateEmployeeView, CurrentEmployeeView, UserProjectsView, UserTasksView, 
+    DMGDownloadView
 )
 
 urlpatterns = [
@@ -13,4 +14,5 @@ urlpatterns = [
     path('employees/me/', CurrentEmployeeView.as_view(), name='employee-me'),
     path('employees/me/projects/', UserProjectsView.as_view(), name='employee-projects'),
     path('employees/me/tasks/', UserTasksView.as_view(), name='employee-tasks'),
+    path('employees/download-dmg/', DMGDownloadView.as_view(), name='dmg-download'),
 ] 

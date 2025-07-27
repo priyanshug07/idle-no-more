@@ -18,6 +18,7 @@ function ActivatePage() {
   const [access, setAccess] = useState('');
   const [refresh, setRefresh] = useState('');
   const [username, setUsername] = useState('');
+  const [downloadInfo, setDownloadInfo] = useState(null);
 
   useEffect(() => {
     if (!code) {
@@ -54,6 +55,8 @@ function ActivatePage() {
         body: JSON.stringify({ password }),
       });
       if (!res.ok) throw new Error('Activation failed');
+      const data = await res.json();
+      setDownloadInfo(data);
       setStatus('activated');
     } catch (err) {
       setError('Activation failed. Please try again.');
@@ -63,7 +66,81 @@ function ActivatePage() {
 
   if (status === 'loading') return <div className="cheerful-bg"><div className="onboard-container">Validating code...</div></div>;
   if (status === 'invalid') return <div className="cheerful-bg"><div className="onboard-container">Invalid or expired activation link.</div></div>;
-  if (status === 'activated') return <div className="cheerful-bg"><div className="onboard-container"><h2>🎉 User activated successfully!</h2><p>You can now login using your updated credentials.</p></div></div>;
+  if (status === 'activated') return (
+    <div className="cheerful-bg">
+      <div className="onboard-container">
+        <h2>🎉 User activated successfully!</h2>
+        <p>You can now login using your updated credentials.</p>
+        {downloadInfo && downloadInfo.download_url && (
+          <div style={{ marginTop: '20px', textAlign: 'center' }}>
+            <h3>📱 Download Desktop App</h3>
+            <p>Get the Idle No More desktop application for better productivity tracking.</p>
+            <div style={{ 
+              backgroundColor: '#fff3cd', 
+              border: '1px solid #ffeaa7', 
+              borderRadius: '6px', 
+              padding: '10px', 
+              margin: '10px 0',
+              fontSize: '14px',
+              color: '#856404'
+            }}>
+              <strong>💡 macOS Users:</strong> If you see a security warning when installing, right-click the app and select "Open", or go to System Preferences → Security & Privacy → "Open Anyway".
+            </div>
+            <button 
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = `http://127.0.0.1:8000${downloadInfo.download_url}`;
+                link.download = downloadInfo.download_filename;
+                
+                // Add authorization header to the request
+                fetch(`http://127.0.0.1:8000${downloadInfo.download_url}`, {
+                  headers: {
+                    'Authorization': `Bearer ${access}`,
+                  },
+                })
+                .then(response => {
+                  if (response.ok) {
+                    return response.blob();
+                  }
+                  throw new Error('Download failed');
+                })
+                .then(blob => {
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.style.display = 'none';
+                  a.href = url;
+                  a.download = downloadInfo.download_filename;
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                })
+                .catch(error => {
+                  console.error('Download error:', error);
+                  alert('Download failed. Please try again.');
+                });
+              }}
+              style={{
+                display: 'inline-block',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                padding: '12px 24px',
+                textDecoration: 'none',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                marginTop: '10px',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '16px'
+              }}
+            >
+              📥 Download Desktop App (DMG)
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   // status === 'valid' or 'activating'
   return (
@@ -217,8 +294,8 @@ function MainApp() {
     const fetchProjects = async () => {
       if (step === 'assign_project' && token && user) {
         try {
-          // For demo, using project=1 as in your example
-          const res = await fetchWithAuth(`${API_BASE}/tasks/?project=1`, token);
+          // Fetch all projects
+          const res = await fetchWithAuth(`${API_BASE}/projects/`, token);
           if (!res.ok) throw new Error('Failed to fetch projects');
           const data = await res.json();
           setProjects(data);
@@ -388,7 +465,7 @@ function MainApp() {
             >
               <option value="" disabled>Select a project</option>
               {projects.map((proj) => (
-                <option key={proj.project} value={proj.project}>{proj.name}</option>
+                <option key={proj.id} value={proj.id}>{proj.name}</option>
               ))}
             </select>
             <button type="submit" disabled={assigning}>{assigning ? 'Assigning...' : 'Assign Project'}</button>
